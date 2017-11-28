@@ -1,44 +1,34 @@
 #!/usr/bin/env sh
 
-_list() {
-    git worktree list
+worktree-switch() {
+    if [ "$#" = "0" ]; then
+        git worktree list
+        return
+    fi
+
+    branch=`git worktree list | grep "$1" | head -n 1 | cut -f1 -d' '`
+
+    if [ -n "$branch" ]; then
+        echo "Switching to [$1] $branch"
+        cd $branch
+    else
+        read -e -p "Worktree for branch $1 does not exist, create? [y/N] " yn
+        case ${yn:0:1} in
+            y|Y)
+                root=`git rev-parse --show-toplevel`
+                proj=`basename $root`
+                dest=`realpath ${root}/../$proj-$1`
+                read -e -p "Create worktree at $dest for [$1]? [y/N] " yn
+                case ${yn:0:1} in
+                    y|Y)
+                        git worktree add $dest $1
+                        ;;
+                    *) ;;
+		esac
+		;;
+            *) ;;
+        esac
+    fi
 }
-
-_get() {
-    git worktree list | grep "$1" | head -n 1 | cut -f1 -d' '
-}
-
-_create() {
-    root=`git rev-parse --show-toplevel`
-    proj=`basename $root`
-    dest=`realpath ${root}/../$proj-$1`
-    read -e -p "Create worktree at $dest for [$1]? [y/N] "
-    case ${yn:0:1} in
-        y|Y)
-            git worktree add $dest $1
-            ;;
-        *) ;;
-    esac
-}
-
-if [ "$#" = "0" ]; then
-    _list
-    exit
-fi
-
-branch=`_get $1`
-
-if [ -n "$branch" ]; then
-    echo "Switching to [$1] $branch"
-    cd $branch
-else
-    read -e -p "Worktree for branch $1 does not exist, create? [y/N] " yn
-    case ${yn:0:1} in
-        y|Y)
-            _create $1
-            ;;
-        *) ;;
-    esac
-fi
 
 
